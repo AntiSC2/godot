@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  godot_x11.cpp                                                        */
+/*  shader_compiler_vulkan.h                                              */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,75 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "main/main.h"
-#include "os_x11.h"
+#ifndef SHADERCOMPILERVULKAN_H
+#define SHADERCOMPILERVULKAN_H
 
-int main(int argc, char *argv[]) {
+#include "pair.h"
+#include "servers/visual/shader_language.h"
+#include "servers/visual/shader_types.h"
+#include "servers/visual_server.h"
 
-	OS_X11 os;
+class ShaderCompilerVulkan {
+public:
+	struct IdentifierActions {
 
-	setlocale(LC_CTYPE, "");
+		Map<StringName, Pair<int *, int> > render_mode_values;
+		Map<StringName, bool *> render_mode_flags;
+		Map<StringName, bool *> usage_flag_pointers;
+		Map<StringName, bool *> write_flag_pointers;
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	getcwd(cwd, PATH_MAX);
+		Map<StringName, ShaderLanguage::ShaderNode::Uniform> *uniforms;
+	};
 
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-		return 255;
-	}
+	struct GeneratedCode {
 
-	if (Main::start())
-		os.run(); // it is actually the OS that decides how to run
-	Main::cleanup();
+		Vector<CharString> defines;
+		Vector<StringName> texture_uniforms;
+		Vector<ShaderLanguage::ShaderNode::Uniform::Hint> texture_hints;
 
-	chdir(cwd);
-	free(cwd);
+		Vector<uint32_t> uniform_offsets;
+		uint32_t uniform_total_size;
+		String uniforms;
+		String vertex_global;
+		String vertex;
+		String fragment_global;
+		String fragment;
+		String light;
 
-	return os.get_exit_code();
-}
+		bool uses_fragment_time;
+		bool uses_vertex_time;
+	};
+
+private:
+	ShaderLanguage parser;
+
+	struct DefaultIdentifierActions {
+
+		Map<StringName, String> renames;
+		Map<StringName, String> render_mode_defines;
+		Map<StringName, String> usage_defines;
+	};
+
+	void _dump_function_deps(ShaderLanguage::ShaderNode *p_node, const StringName &p_for_func, const Map<StringName, String> &p_func_code, String &r_to_add, Set<StringName> &added);
+	String _dump_node_code(ShaderLanguage::Node *p_node, int p_level, GeneratedCode &r_gen_code, IdentifierActions &p_actions, const DefaultIdentifierActions &p_default_actions, bool p_assigning);
+
+	StringName current_func_name;
+	StringName vertex_name;
+	StringName fragment_name;
+	StringName light_name;
+	StringName time_name;
+
+	Set<StringName> used_name_defines;
+	Set<StringName> used_flag_pointers;
+	Set<StringName> used_rmode_defines;
+	Set<StringName> internal_functions;
+
+	DefaultIdentifierActions actions[VS::SHADER_MAX];
+
+public:
+	Error compile(VS::ShaderMode p_mode, const String &p_code, IdentifierActions *p_actions, const String &p_path, GeneratedCode &r_gen_code);
+
+	ShaderCompilerVulkan();
+};
+
+#endif // SHADERCOMPILERVULKAN_H

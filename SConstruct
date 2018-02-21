@@ -160,6 +160,7 @@ opts.Add(BoolVariable('xaudio2', "XAudio2 audio driver", False))
 opts.Add(BoolVariable('xml', "XML format support for resources", True))
 
 # Advanced options
+opts.Add(BoolVariable('use_vulkan', "Enable the use of the Vulkan API. This will disable OpenGL.", True))
 opts.Add(BoolVariable('disable_3d', "Disable 3D nodes for smaller executable", False))
 opts.Add(BoolVariable('disable_advanced_gui', "Disable advanced 3D gui nodes and behaviors", False))
 opts.Add('extra_suffix', "Custom extra suffix added to the base filename of all generated binary files", '')
@@ -428,6 +429,8 @@ if selected_platform in platform_list:
 
     if env['tools']:
         env.Append(CPPFLAGS=['-DTOOLS_ENABLED'])
+    if env['use_vulkan']:
+        env.Append(CPPFLAGS=(['-DVULKAN_ENABLED']))
     if env['disable_3d']:
         env.Append(CPPFLAGS=['-D_3D_DISABLED'])
     if env['gdscript']:

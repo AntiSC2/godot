@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  godot_x11.cpp                                                        */
+/*  vulkan_device.cpp                                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "main/main.h"
-#include "os_x11.h"
+#include "vulkan_device.h"
 
-int main(int argc, char *argv[]) {
+#if defined(VULKAN_ENABLED)
 
-	OS_X11 os;
+VulkanDevice *VulkanDevice::singleton = NULL;
 
-	setlocale(LC_CTYPE, "");
+VulkanDevice *VulkanDevice::get_singleton() {
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	getcwd(cwd, PATH_MAX);
-
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-		return 255;
-	}
-
-	if (Main::start())
-		os.run(); // it is actually the OS that decides how to run
-	Main::cleanup();
-
-	chdir(cwd);
-	free(cwd);
-
-	return os.get_exit_code();
+	return singleton;
 }
+
+VulkanDevice::VulkanDevice() {
+
+	ERR_FAIL_COND(singleton);
+
+	singleton = this;
+}
+
+VulkanDevice::~VulkanDevice() {
+
+	if (singleton == this)
+		singleton = NULL;
+}
+
+#endif

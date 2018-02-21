@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  godot_x11.cpp                                                        */
+/*  vulkan_device.h                                                         */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,38 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "main/main.h"
-#include "os_x11.h"
+#ifndef VULKAN_DEVICE_H
+#define VULKAN_DEVICE_H
 
-int main(int argc, char *argv[]) {
+#ifdef VULKAN_ENABLED
 
-	OS_X11 os;
+#include "typedefs.h"
 
-	setlocale(LC_CTYPE, "");
+/**
+	@author Jakob Sinclair <sinclair.jakob@mailbox.org>
+*/
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	getcwd(cwd, PATH_MAX);
+class VulkanDevice {
 
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-		return 255;
-	}
+	static VulkanDevice *singleton;
 
-	if (Main::start())
-		os.run(); // it is actually the OS that decides how to run
-	Main::cleanup();
+public:
+	static VulkanDevice *get_singleton();
 
-	chdir(cwd);
-	free(cwd);
+	virtual void release_current() = 0;
 
-	return os.get_exit_code();
-}
+	virtual void make_current() = 0;
+
+	virtual void swap_buffers() = 0;
+
+	virtual Error initialize() = 0;
+
+	virtual void set_use_vsync(bool p_use) = 0;
+	virtual bool is_using_vsync() const = 0;
+
+	VulkanDevice();
+	virtual ~VulkanDevice();
+};
+
+#endif
+#endif

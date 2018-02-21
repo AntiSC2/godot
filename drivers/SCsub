@@ -25,6 +25,8 @@ if env['xaudio2']:
 if (env["platform"] != "server"):
     SConscript('gles3/SCsub')
     SConscript('gl_context/SCsub')
+    SConscript('vulkan/SCsub')
+    SConscript('vulkan_device/SCsub')
 else:
     SConscript('dummy/SCsub')
 

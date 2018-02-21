@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  godot_x11.cpp                                                        */
+/*  vulkan_device_x11.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,49 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "main/main.h"
-#include "os_x11.h"
+#ifndef VULKAN_DEVICE_X11_H
+#define VULKAN_DEVICE_X11_H
 
-int main(int argc, char *argv[]) {
+/**
+	@author Juan Linietsky <reduzio@gmail.com>
+*/
+#ifdef X11_ENABLED
+#ifdef VULKAN_ENABLED
 
-	OS_X11 os;
+#include "drivers/vulkan_device/vulkan_device.h"
+#include "os/os.h"
+#include <X11/Xlib.h>
 
-	setlocale(LC_CTYPE, "");
+struct VulkanDevice_X11_Private;
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	getcwd(cwd, PATH_MAX);
+class VulkanDevice_X11 : public VulkanDevice {
 
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-		return 255;
-	}
+	VulkanDevice_X11_Private *p;
+	OS::VideoMode default_video_mode;
+	//::Colormap x11_colormap;
+	::Display *x11_display;
+	::Window &x11_window;
+	bool double_buffer;
+	bool direct_render;
+	bool use_vsync;
 
-	if (Main::start())
-		os.run(); // it is actually the OS that decides how to run
-	Main::cleanup();
+public:
+	virtual void release_current();
+	virtual void make_current();
+	virtual void swap_buffers();
+	virtual int get_window_width();
+	virtual int get_window_height();
 
-	chdir(cwd);
-	free(cwd);
+	virtual Error initialize();
 
-	return os.get_exit_code();
-}
+	virtual void set_use_vsync(bool p_use);
+	virtual bool is_using_vsync() const;
+
+	VulkanDevice_X11(::Display *p_x11_display, ::Window &p_x11_window, const OS::VideoMode &p_default_video_mode);
+	~VulkanDevice_X11();
+};
+
+#endif
+
+#endif
+#endif

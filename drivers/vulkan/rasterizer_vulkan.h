@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  godot_x11.cpp                                                        */
+/*  rasterizer_vulkan.h                                                  */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,34 +28,46 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include <limits.h>
-#include <locale.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include "main/main.h"
-#include "os_x11.h"
+#ifndef RASTERIZERVULKAN_H
+#define RASTERIZERVULKAN_H
 
-int main(int argc, char *argv[]) {
+#include "rasterizer_canvas_vulkan.h"
+#include "rasterizer_scene_vulkan.h"
+#include "rasterizer_storage_vulkan.h"
+#include "servers/visual/rasterizer.h"
 
-	OS_X11 os;
+class RasterizerVulkan : public Rasterizer {
 
-	setlocale(LC_CTYPE, "");
+	static Rasterizer *_create_current();
 
-	char *cwd = (char *)malloc(PATH_MAX);
-	getcwd(cwd, PATH_MAX);
+	RasterizerStorageVulkan *storage;
+	RasterizerCanvasVulkan *canvas;
+	RasterizerSceneVulkan *scene;
 
-	Error err = Main::setup(argv[0], argc - 1, &argv[1]);
-	if (err != OK) {
-		free(cwd);
-		return 255;
-	}
+	uint64_t prev_ticks;
+	double time_total;
 
-	if (Main::start())
-		os.run(); // it is actually the OS that decides how to run
-	Main::cleanup();
+public:
+	virtual RasterizerStorage *get_storage();
+	virtual RasterizerCanvas *get_canvas();
+	virtual RasterizerScene *get_scene();
 
-	chdir(cwd);
-	free(cwd);
+	virtual void set_boot_image(const Ref<Image> &p_image, const Color &p_color, bool p_scale);
 
-	return os.get_exit_code();
-}
+	virtual void initialize();
+	virtual void begin_frame();
+	virtual void set_current_render_target(RID p_render_target);
+	virtual void restore_render_target();
+	virtual void clear_render_target(const Color &p_color);
+	virtual void blit_render_target_to_screen(RID p_render_target, const Rect2 &p_screen_rect, int p_screen = 0);
+	virtual void end_frame(bool p_swap_buffers);
+	virtual void finalize();
+
+	static void make_current();
+
+	static void register_config();
+	RasterizerVulkan();
+	~RasterizerVulkan();
+};
+
+#endif // RASTERIZERVULKAN_H

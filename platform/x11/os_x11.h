@@ -32,6 +32,7 @@
 #define OS_X11_H
 
 #include "context_gl_x11.h"
+#include "vulkan_device_x11.h"
 #include "crash_handler_x11.h"
 #include "drivers/unix/os_unix.h"
 #include "os/input.h"
@@ -94,6 +95,10 @@ class OS_X11 : public OS_Unix {
 	Atom requested;
 
 	int xdnd_version;
+
+#if defined(VULKAN_ENABLED)
+	VulkanDevice_X11 *vulkan_device;
+#endif
 
 #if defined(OPENGL_ENABLED)
 	ContextGL_X11 *context_gl;

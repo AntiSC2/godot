@@ -30,6 +30,7 @@
 
 #include "os_x11.h"
 #include "drivers/gles3/rasterizer_gles3.h"
+#include "drivers/vulkan/rasterizer_vulkan.h"
 #include "errno.h"
 #include "key_mapping_x11.h"
 #include "os/dir_access.h"
@@ -77,7 +78,7 @@
 #include <X11/XKBlib.h>
 
 int OS_X11::get_video_driver_count() const {
-	return 1;
+	return 2;
 }
 
 const char *OS_X11::get_video_driver_name(int p_driver) const {
@@ -281,7 +282,15 @@ Error OS_X11::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 
 // maybe contextgl wants to be in charge of creating the window
 //print_line("def videomode "+itos(current_videomode.width)+","+itos(current_videomode.height));
-#if defined(OPENGL_ENABLED)
+#if defined(VULKAN_ENABLED)
+	vulkan_device = memnew(VulkanDevice_X11(x11_display, x11_window, current_videomode));
+	vulkan_device->initialize();
+
+	RazterizerVulkan::register_config();
+	RazterizerVulkan::make_current();
+#endif
+
+#if defined(OPENGL_ENABLED) && !defined(VULKAN_ENABLED)
 
 	context_gl = memnew(ContextGL_X11(x11_display, x11_window, current_videomode, true));
 	context_gl->initialize();
