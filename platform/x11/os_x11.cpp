@@ -286,8 +286,8 @@ Error OS_X11::initialize(const VideoMode &p_desired, int p_video_driver, int p_a
 	vulkan_device = memnew(VulkanDevice_X11(x11_display, x11_window, current_videomode));
 	vulkan_device->initialize();
 
-	RazterizerVulkan::register_config();
-	RazterizerVulkan::make_current();
+	RasterizerVulkan::register_config();
+	RasterizerVulkan::make_current();
 #endif
 
 #if defined(OPENGL_ENABLED) && !defined(VULKAN_ENABLED)

@@ -64,8 +64,8 @@ public:
 	virtual void finalize();
 
 	static void make_current();
-
 	static void register_config();
+
 	RasterizerVulkan();
 	~RasterizerVulkan();
 };

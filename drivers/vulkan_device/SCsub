@@ -2,4 +2,5 @@
 
 Import('env')
 
+env.Append(LIBS='vulkan')
 env.add_source_files(env.drivers_sources,"*.cpp")

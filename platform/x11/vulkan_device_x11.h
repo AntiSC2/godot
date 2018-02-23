@@ -32,7 +32,7 @@
 #define VULKAN_DEVICE_X11_H
 
 /**
-	@author Juan Linietsky <reduzio@gmail.com>
+	@author Jakob Sinclair <sinclair.jakob@mailbox.org>
 */
 #ifdef X11_ENABLED
 #ifdef VULKAN_ENABLED
@@ -41,11 +41,8 @@
 #include "os/os.h"
 #include <X11/Xlib.h>
 
-struct VulkanDevice_X11_Private;
-
 class VulkanDevice_X11 : public VulkanDevice {
 
-	VulkanDevice_X11_Private *p;
 	OS::VideoMode default_video_mode;
 	//::Colormap x11_colormap;
 	::Display *x11_display;

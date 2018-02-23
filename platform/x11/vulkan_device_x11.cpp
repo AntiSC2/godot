@@ -32,44 +32,34 @@
 
 #ifdef X11_ENABLED
 #ifdef VULKAN_ENABLED
+#include "core/vector.h"
 #include <vulkan/vulkan.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <X11/Xutil.h>
 
-struct VulkanDevice_X11_Private {
-	VkInstance vk_instance;
-	VkPhysicalDevice *physical_devices;
+struct VulkanDevice_Private {
+	VkInstance vk_instance;	
 	uint32_t device_count;
+	uint32_t extension_count;
+	uint32_t enabled_layer_count;
+	Vector<VkPhysicalDevice> devices;
+	Vector<const char *> extension_names;
+	Vector<const char *> layer_names;
 };
 
 void VulkanDevice_X11::release_current() {
 
-	glXMakeCurrent(x11_display, None, NULL);
 }
 
 void VulkanDevice_X11::make_current() {
 
-	glXMakeCurrent(x11_display, x11_window, p->glx_context);
 }
 
 void VulkanDevice_X11::swap_buffers() {
 
-	glXSwapBuffers(x11_display, x11_window);
 }
-
-/*
-static GLWrapperFuncPtr wrapper_get_proc_address(const char* p_function) {
-
-	//print_line(String()+"getting proc of: "+p_function);
-	GLWrapperFuncPtr func=(GLWrapperFuncPtr)glXGetProcAddress( (const GLubyte*) p_function);
-	if (!func) {
-		print_line("Couldn't find function: "+String(p_function));
-	}
-
-	return func;
-
-}*/
 
 static bool ctxErrorOccurred = false;
 static int ctxErrorHandler(Display *dpy, XErrorEvent *ev) {
@@ -91,18 +81,10 @@ static void set_class_hint(Display *p_display, Window p_window) {
 }
 
 Error VulkanDevice_X11::initialize() {
-	int fbcount;
-	GLXFBConfig *fbc = glXChooseFBConfig(x11_display, DefaultScreen(x11_display), visual_attribs, &fbcount);
-	ERR_FAIL_COND_V(!fbc, ERR_UNCONFIGURED);
-
-	XVisualInfo *vi = glXGetVisualFromFBConfig(x11_display, fbc[0]);
-
-	XSetWindowAttributes swa;
-
-	swa.colormap = XCreateColormap(x11_display, RootWindow(x11_display, vi->screen), vi->visual, AllocNone);
-	swa.border_pixel = 0;
-	swa.event_mask = StructureNotifyMask;
-	VkXlibSurfaceCreateInfoKHR xlib = { VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR };
+	create_vulkan_instance();
+	pick_physical_device();
+	initialize_logical_device();
+	/*VkXlibSurfaceCreateInfoKHR xlib = { VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR };
 	xlib.flags = 0;
 	xlib.dpy = (Display *)winsysData1_;
 	xlib.window = (Window)winsysData2_;
@@ -120,10 +102,7 @@ Error VulkanDevice_X11::initialize() {
 
 	XSync(x11_display, False);
 	XSetErrorHandler(oldHandler);
-
-	XFree(vi);
-	XFree(fbc);
-
+	*/
 	return OK;
 }
 
@@ -143,31 +122,7 @@ int VulkanDevice_X11::get_window_height() {
 }
 
 void VulkanDevice_X11::set_use_vsync(bool p_use) {
-	static bool setup = false;
-	static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT = NULL;
-	static PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalMESA = NULL;
-	static PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI = NULL;
-
-	if (!setup) {
-		setup = true;
-		String extensions = glXQueryExtensionsString(x11_display, DefaultScreen(x11_display));
-		if (extensions.find("GLX_EXT_swap_control") != -1)
-			glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB((const GLubyte *)"glXSwapIntervalEXT");
-		if (extensions.find("GLX_MESA_swap_control") != -1)
-			glXSwapIntervalMESA = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte *)"glXSwapIntervalMESA");
-		if (extensions.find("GLX_SGI_swap_control") != -1)
-			glXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte *)"glXSwapIntervalSGI");
-	}
-	int val = p_use ? 1 : 0;
-	if (glXSwapIntervalMESA) {
-		glXSwapIntervalMESA(val);
-	} else if (glXSwapIntervalSGI) {
-		glXSwapIntervalSGI(val);
-	} else if (glXSwapIntervalEXT) {
-		GLXDrawable drawable = glXGetCurrentDrawable();
-		glXSwapIntervalEXT(x11_display, drawable, val);
-	} else
-		return;
+	
 	use_vsync = p_use;
 }
 bool VulkanDevice_X11::is_using_vsync() const {
@@ -183,15 +138,13 @@ VulkanDevice_X11::VulkanDevice_X11(::Display *p_x11_display, ::Window &p_x11_win
 
 	double_buffer = false;
 	direct_render = false;
-	glx_minor = glx_major = 0;
-	p = memnew(VulkanDevice_X11_Private);
-	p->glx_context = 0;
+	p = memnew(VulkanDevice_Private);
 	use_vsync = false;
 }
 
 VulkanDevice_X11::~VulkanDevice_X11() {
-	release_current();
 
+	release_current();
 	memdelete(p);
 }
 

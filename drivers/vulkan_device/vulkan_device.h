@@ -31,9 +31,11 @@
 #ifndef VULKAN_DEVICE_H
 #define VULKAN_DEVICE_H
 
-#ifdef VULKAN_ENABLED
+//#ifdef VULKAN_ENABLED
 
 #include "typedefs.h"
+
+struct VulkanDevice_Private;
 
 /**
 	@author Jakob Sinclair <sinclair.jakob@mailbox.org>
@@ -42,6 +44,14 @@
 class VulkanDevice {
 
 	static VulkanDevice *singleton;
+
+protected:
+
+	VulkanDevice_Private *p;	
+
+	virtual void create_vulkan_instance();
+	virtual void pick_physical_device();
+	virtual void initialize_logical_device();
 
 public:
 	static VulkanDevice *get_singleton();
@@ -62,4 +72,4 @@ public:
 };
 
 #endif
-#endif
+//#endif
